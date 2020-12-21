@@ -4,7 +4,7 @@
 
 ## WEEK1
 ### [ FPGA 이해와 소개 ]
-<span style="color:red">따로 실습 코드 없음</span>
+<span style="color:red">*따로 실습 코드 없음*</span>
 
 * FPGA란 무엇인지
 * VLSI DESIGN FLOW
@@ -45,7 +45,7 @@
 * 1 bit 비교기
 
 ## WEEK6
-### 논리 및 연산 회로
+### [ 논리 및 연산 회로 ]
 
 * half Adder
 * full Adder
@@ -108,9 +108,8 @@
 
 ## WEEK14
 ### [ Sequence Detector ]
+<span style="color:red">*따로 실습 코드 없음*</span>
 
 * Moore Machine
 * Mealy Machine
 * Sequence Detector
-  
-<span style="color:red">따로 실습 코드 없음</span>
