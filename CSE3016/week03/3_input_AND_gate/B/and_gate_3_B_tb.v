@@ -1,36 +1,25 @@
 `timescale 1ns / 1ps
 
-module inv_tb();
+module and_gate_3_B_tb();
 
-reg aa, bb, cc, clk;
-wire d, e;
+    reg aa, bb, cc, clk;
+    wire d, e;
 
-inv u_inv(
-.a(aa),
-.b(bb),
-.c(cc),
-.d(d),
-.e(e)
-);
+    and_gate_3_B set(aa, bb, cc, d, e);
 
-initial begin
-aa = 1'b0;
-bb = 1'b0;
-cc = 1'b0;
-clk = 1'b0;
-end
+    initial begin
+        aa = 1'b0;
+        bb = 1'b0;
+        cc = 1'b0;
+        clk = 1'b0;
+    end
 
-always clk = #100 ~clk;
+    always clk = #25 ~clk;
 
-always @(posedge clk) begin
-aa <= ~aa;
-bb <= ~bb;
-cc <= ~cc;
-end
-
-initial begin
-#1000
-$finish;
-end
+    always @(posedge clk) begin
+        aa <= #150 ~aa;
+        bb <= #50 ~bb;
+        cc <= ~cc;
+    end
 
 endmodule
