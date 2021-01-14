@@ -1,32 +1,28 @@
 `timescale 1ns / 1ps
 
-module inv_tb();
+module full_adder_tb();
+    reg a, b, c_in, clk;
+    wire s, c_out;
 
-reg a, b, c_in;
-wire s, c_out;
+    full_adder set(a, b, c_in, s, c_out);
 
-inv u_inv(
-.A(a),
-.B(b),
-.C_in(c_in),
-.S(s),
-.C_out(c_out));
+    initial begin
+        a = 1'b0;
+        b = 1'b0;
+        c_in = 1'b0;
+        clk = 1'b1;
+    end
 
-initial begin
-a = 1'b0;
-b = 1'b0;
-c_in = 1'b0;
-end
+    always clk = #25 ~clk;
 
-always begin
-a = #50 ~a;
-b = #100 ~b;
-c_in = #150 ~c_in;
-end
+    always @(posedge clk) begin
+        a <= #150 ~a;
+        b <= #50 ~b;
+        c_in <= ~c_in;
+    end
 
-initial begin
-#1000
-$finish;
-end
-
+    initial begin
+        #1000
+        $finish;
+    end
 endmodule

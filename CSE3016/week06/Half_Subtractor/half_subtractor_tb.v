@@ -1,29 +1,26 @@
 `timescale 1ns / 1ps
 
-module inv_tb();
+module half_subractor_tb();
+    reg a, b, clk;
+    wire d, br;
 
-reg a, b;
-wire br, d;
+    half_subractor set(a, b, d, br);
 
-inv u_inv(
-.A(a),
-.B(b),
-.D(d),
-.b(br));
+    initial begin
+        a = 1'b0;
+        b = 1'b0;
+        clk = 1'b1;
+    end
 
-initial begin
-a = 1'b0;
-b = 1'b0;
-end
+    always clk = #25 ~clk;
 
-always begin
-a = #100 ~a;
-b = #150 ~b;
-end
+    always @(posedge clk) begin
+        a <= #50 ~a;
+        b <= ~b;
+    end
 
-initial begin
-#1000
-$finish;
-end
-
+    initial begin
+        #1000
+        $finish;
+    end
 endmodule
