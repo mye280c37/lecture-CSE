@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
-module inv(a, b, c, d);
-input a, b, c;
-output d;
+module boolean_func1_B(a, b, c, d);
+    input a, b, c;
+    output d;
 
-assign d = ~((a&b)|c);
+    assign d = ~((a&b)|c);
 endmodule

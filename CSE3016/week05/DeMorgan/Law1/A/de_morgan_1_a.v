@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module inv(a, b, c);
+module deMorgan1_A(a, b, c);
     input a, b;
     output c;
 
