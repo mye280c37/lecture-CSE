@@ -1,10 +1,13 @@
 `timescale 1ns / 1ps
 
-module inv(A,B,C,D,F1,F2,F3);
-input A, B, C, D;
-output F1, F2, F3;
+module comparator_2(A, B, F1, F2, F3);
+    input [1:0] A, B;
+    output F1, F2, F3;
 
-assign F1 = (A&~(C))|(B&(~C)&(~D))|(A&B&(~D));
-assign F2 = (~(A^B))&(~(C^D));
-assign F3 = (~(A)&C)|((~A)&(~B)&D)|((~B)&C&D);
+    // A>B
+    assign F1 = (A[1]&(~B[1]))|(A[0]&(~B[1])&(~B[0]))|(A[1]&A[0]&(~B[0]));
+    // A=B
+    assign F2 = (~(A[1]^B[1]))&(~(A[0]^B[0]));
+    // A<B
+    assign F3 = ((~A[1])&B[1])|((~A[1])&(~A[0])&B[0])|((~A[0])&B[1]&B[0]);
 endmodule

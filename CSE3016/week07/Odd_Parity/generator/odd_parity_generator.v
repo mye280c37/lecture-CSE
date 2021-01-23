@@ -1,8 +1,8 @@
 `timescale 1ns / 1ps
 
-module inv(A,B,C,D,P);
-input A, B, C, D;
-output P;
+module odd_parity_generator(A, B, C, D, P);
+    input A, B, C, D;
+    output P;
 
-assign P = ~((A^B)^(C^D));
+    assign P = ~((A^B)^(C^D));
 endmodule

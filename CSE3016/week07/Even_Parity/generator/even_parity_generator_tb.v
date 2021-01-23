@@ -1,35 +1,25 @@
 `timescale 1ns / 1ps
-module inv_tb();
-reg a, b, c, d, clk;
-wire p;
 
-inv u_inv(
-.A(a),
-.B(b),
-.C(c),
-.D(d),
-.P(p));
+module even_parity_generator_tb();
+    reg a, b, c, d, clk;
+    wire p;
 
-initial begin
-clk = 1'b0;
-a = 1'b0;
-b = 1'b0;
-c = 1'b0;
-d = 1'b0;
-end
+    even_parity_generator set(a, b, c, d, p);
 
-always clk = #10 ~clk;
+    initial begin
+        clk = 1'b1;
+        a = 1'b0;
+        b = 1'b0;
+        c = 1'b0;
+        d = 1'b0;
+    end
 
-always @(posedge clk) begin
-a <= #80 ~a;
-b <= #40 ~b;
-c <= #20 ~c;
-d <= #10 ~d;
-end
+    always clk = #25 ~clk;
 
-initial begin
-#400
-$finish;
-end
-
+    always @(posedge clk) begin
+        a <= #350 ~a;
+        b <= #150 ~b;
+        c <= #50 ~c;
+        d <= ~d;
+    end
 endmodule
