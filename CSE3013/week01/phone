@@ -1,0 +1,22 @@
+if [ $# -eq 0 ]
+then
+	echo "Usage: phone searchfor[...searchfor]"
+	echo "(You didn't tell me what you want to search for.)"
+else
+	args="("
+	cnt=1
+	for arg in $*
+	do
+		if [ $cnt -eq $# ]
+		then
+			args+=$arg
+		else
+			args+=$arg
+			args+="|"
+		fi
+		cnt=`expr $cnt + 1`
+	done
+	args+=")"
+	egrep -i "$args" data > result
+	awk 'BEGIN{FS="|";}{printf ("--------------->\nname :%s\naddress :%s\nphone :%s\n<---------------\n", $1, $2, $3);}' result
+fi
