@@ -18,5 +18,5 @@ else
 	done
 	args+=")"
 	egrep -i "$args" data > result
-	awk 'BEGIN{FS="|";}{printf ("--------------->\nname :%s\naddress :%s\nphone :%s\n<---------------\n", $1, $2, $3);}' result
+	awk -f display.awk result
 fi

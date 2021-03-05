@@ -1,0 +1,1 @@
+BEGIN{FS="|";}{printf ("--------------->\nname :%s\naddress :%s\nphone :%s\n<---------------\n", $1, $2, $3);}
