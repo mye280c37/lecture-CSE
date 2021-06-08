@@ -1,0 +1,5 @@
+.data
+Num_Str		DWORD 3
+Cipher_Str	BYTE "ABCDEFGHIJ", 0
+			BYTE "KLMNOPQRST", 0
+			BYTE "UVWXYZABCD", 0

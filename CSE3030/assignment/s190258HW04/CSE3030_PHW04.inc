@@ -1,0 +1,4 @@
+.data
+TN		DWORD 1
+CASE		DWORD 1
+HEIGHT		DWORD 8

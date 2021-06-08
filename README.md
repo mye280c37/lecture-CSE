@@ -4,3 +4,4 @@
 |:---:|:---:|:---:|
 |CSE3013|[컴퓨터공학설계및실험Ι](https://github.com/mye785C83/lecture/tree/master/CSE3013)|2021 1학기|
 |CSE3016|[컴퓨터공학실험ΙΙ](https://github.com/mye785C83/lecture/tree/master/CSE3016)|2020 2학기|
+|CSE3030|어셈블리프로그래밍| 2021 1학기

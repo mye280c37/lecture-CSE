@@ -1,0 +1,4 @@
+.data
+x1 DWORD 10
+x2 DWORD 25
+x3 DWORD -20
