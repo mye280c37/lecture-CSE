@@ -7,7 +7,10 @@ int main(){
 
 	initscr();
 	noecho();
-	keypad(stdscr, TRUE);	
+	keypad(stdscr, TRUE);
+
+	// create existed ranking
+	createRankList();	
 
 	srand((unsigned int)time(NULL));
 
@@ -15,10 +18,17 @@ int main(){
 		clear();
 		switch(menu()){
 		case MENU_PLAY: play(); break;
+		case MENU_RANK: rank(); break;
+		case MENU_REC_PLAY: 
+			rec_flag = 1;
+			recommendedPlay();
+			break;
 		case MENU_EXIT: exit=1; break;
 		default: break;
 		}
 	}
+
+	writeRankFile();
 
 	endwin();
 	system("clear");
@@ -28,13 +38,45 @@ int main(){
 void InitTetris(){
 	int i,j;
 
-	for(j=0;j<HEIGHT;j++)
-		for(i=0;i<WIDTH;i++)
-			field[j][i]=0;
+	for (j = 0; j < HEIGHT; j++) {
+		for (i = 0; i < WIDTH; i++) {
+			field[j][i] = 0;
+			if(!rec_flag) recRoot->recField[j][i] = 0;
+		}
+	}
 
-	for(i=0; i<BLOCK_NUM; i++){
+	// initialize nextBlock
+	for(i=0; i<5; i++){
 		nextBlock[i]=rand()%7;
 	}
+
+	if(rec_flag){
+		for (i=0; i<WIDTH; i++){
+			newRecRoot->height[i] = 0;
+		}
+		for (i=0; i<HEIGHT; i++){
+			newRecRoot->hole[i][0] = 0;
+			newRecRoot->hole[i][1] = 0b0;
+		}
+		newRecRoot->level = 0;
+		newRecRoot->accumulatedScore = 0;
+		newRecRoot->reward = 0;
+		recommendR = 0;
+		recommendY = -1;
+		recommendX = WIDTH/2-2;
+
+		modified_recommend(newRecRoot);
+	}else{
+		// initialize recRoot
+		recRoot->level = 0;
+		recRoot->accumulatedScore = 0;
+		recommendR = 0;
+		recommendY = -1;
+		recommendX = WIDTH/2-2;
+
+		recommend(recRoot);
+	}
+
 	blockRotate=0;
 	blockY=-1;
 	blockX=WIDTH/2-2;
@@ -44,7 +86,11 @@ void InitTetris(){
 
 	DrawOutline();
 	DrawField();
-	DrawBlockWithFeatures(blockY,blockX,nextBlock[0],blockRotate);
+	if (rec_flag){
+		DrawBlockWithFeatures(blockY, recommendX, nextBlock[0], recommendR);
+	}else{
+		DrawBlockWithFeatures(blockY,blockX,nextBlock[0],blockRotate);
+	}
 	DrawNextBlock(nextBlock);
 	PrintScore(score);
 }
@@ -193,14 +239,25 @@ void DrawBlock(int y, int x, int blockID,int blockRotate,char tile){
 }
 
 void DrawShadow(int y, int x, int blockID,int blockRotate){
-	char tile = '/';
+	// 블록이 더 이상 내려갈 수 없는 위치 찾기
 	int shadowY = GetShadowY(y, x, blockID, blockRotate);
+	// shadow 그리기
 	DrawBlock(shadowY, x, blockID, blockRotate, '/');
 }
 
+void DrawRecommend(int y, int x, int blockID,int blockRotate){
+	DrawBlock(y, x, blockID, blockRotate, 'R');
+}
+
 void DrawBlockWithFeatures(int y, int x, int blockID,int blockRotate){
-	DrawShadow(y, x, blockID, blockRotate);
-	DrawBlock(y, x, blockID, blockRotate, ' ');
+	if (rec_flag){
+		DrawShadow(recommendY, recommendX, blockID, recommendR);
+		DrawBlock(y, recommendX, blockID, recommendR, ' ');
+	}else{
+		DrawShadow(y, x, blockID, blockRotate);
+		DrawBlock(y, x, blockID, blockRotate, ' ');
+		DrawRecommend(recommendY, recommendX, nextBlock[0], recommendR);
+	}
 }
 
 void DeleteBlock(int y, int x, int blockID, int blockRotate, char tile){
@@ -241,6 +298,9 @@ void play(){
 	clear();
 	act.sa_handler = BlockDown;
 	sigaction(SIGALRM,&act,&oact);
+
+	recRoot = (RecNode*)malloc(sizeof(RecNode));
+
 	InitTetris();
 	do{
 		if(timed_out==0){
@@ -256,10 +316,13 @@ void play(){
 			printw("Good-bye!!");
 			refresh();
 			getch();
+			newRank(score);
 
 			return;
 		}
 	}while(!gameOver);
+
+	free(recRoot);
 
 	alarm(0);
 	getch();
@@ -285,7 +348,7 @@ int CheckToMove(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int bloc
 			if(block[currentBlock][blockRotate][i][j] == 1){
 				int fieldY = blockY + i;
 				int fieldX = blockX + j;
-				if(f[fieldY][fieldX] == 1 | fieldY < 0 | fieldY >= HEIGHT | fieldX < 0 | fieldX >= WIDTH){
+				if(f[fieldY][fieldX] == 1 || fieldY < 0 || fieldY >= HEIGHT || fieldX < 0 || fieldX >= WIDTH){
 					return 0;
 				}
 			}
@@ -331,28 +394,37 @@ void BlockDown(int sig){
 		DrawChange(field, KEY_DOWN, nextBlock[0], blockRotate, blockY, blockX);
 	}
 	else{
-		AddBlockToField(field, nextBlock[0], blockRotate, blockY, blockX);
+		score += AddBlockToField(field, nextBlock[0], blockRotate, blockY, blockX);
 		if(blockY == -1) gameOver = 1;
-		else{
-			score += DeleteLine(field);
-			nextBlock[0] = nextBlock[1];
-			for(int i=1; i<BLOCK_NUM; i++){
-				nextBlock[i] = rand()%7;
-			}
-			DrawNextBlock(nextBlock);
-			blockY = -1;
-			blockX = WIDTH/2-2;
-			blockRotate = 0;
-			PrintScore(score);
-		}
+		score += DeleteLine(field);
+		// renew nextBlock
+		for (int i = 0; i < 4; i++) nextBlock[i] = nextBlock[i + 1];
+		nextBlock[4] = rand()%7;
+
+		for (int i = 0; i < HEIGHT; i++)
+			for (int j = 0; j < WIDTH; j++)
+				recRoot->recField[i][j] = field[i][j];
+		recRoot->level = 0;
+		recRoot->accumulatedScore = score;
+		recommendR = 0;
+		recommendY = -1;
+		recommendX = WIDTH/2-2;
+		recommend(recRoot);
+
+		DrawNextBlock(nextBlock);
+		blockY = -1;
+		blockX = WIDTH/2-2;
+		blockRotate = 0;
+		PrintScore(score);
 		DrawField();
 	}
 	timed_out = 0;
 	//강의자료 p26-27의 플로우차트를 참고한다.
 }
 
-void AddBlockToField(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int blockY, int blockX){
+int AddBlockToField(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int blockY, int blockX){
 	int touched = 0;
+	//Block이 추가된 영역의 필드값을 바꾼다.
 	for(int i = 0; i < 4; i++){
 		for(int j = 0; j < 4; j++){
 			if(block[currentBlock][blockRotate][i][j] == 1){
@@ -360,13 +432,13 @@ void AddBlockToField(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int
 				int fieldX = blockX + j; 
 				if(0 <= fieldY && fieldY < HEIGHT && 0 <= fieldX && fieldX < WIDTH){
 					f[fieldY][fieldX] = 1;
+					// 필드와 맞닿아 있는 블록의 면적을 count
 					if (fieldY == HEIGHT-1) touched++;
 				}
 			}
 		}
 	}
-	score += touched*10;
-	//Block이 추가된 영역의 필드값을 바꾼다.
+	return touched*10;
 }
 
 int DeleteLine(char f[HEIGHT][WIDTH]){
@@ -397,35 +469,556 @@ int DeleteLine(char f[HEIGHT][WIDTH]){
 
 
 void createRankList(){
-	// user code
+	FILE *fp;
+
+    fp = fopen("rank.txt", "r");
+
+    if (fp == NULL) {
+        fp = fopen("rank.txt", "w");
+        if (fp == NULL) {
+            fprintf(stderr, "create ranking error!\n");
+            exit(0);
+        }
+        fprintf(fp, "0\n");
+        // create rankHead
+		rankList = (RankNode*)malloc(sizeof(RankNode));
+		rankList[0].score = 0;
+    } else {
+        int cnt, score;
+        char name[NAMELEN];
+
+		fscanf(fp, "%d", &cnt);
+
+		// create rankList
+		rankList = (RankNode*)malloc(sizeof(RankNode)*(cnt+1));
+		if(rankList == NULL) {
+			fprintf(stderr, "can't create rank list");
+			exit(0);
+		}
+		
+
+		// store rankSize in rankList[0]
+		rankList[0].score = cnt;
+
+		for (int i=1; i<=cnt; i++){
+			fscanf(fp, "%s %d", rankList[i].name, &(rankList[i].score));
+		}
+    }
+
+    fclose(fp);
 }
 
 void rank(){
-	// user code
+	int command, x, y;
+	int rankSize = rankList[0].score;
+	char name[NAMELEN];
+	int findName = 0;
+	int delete_rank;
+
+	do {
+        clear();
+        printw("1. list ranks from X to Y\n");
+        printw("2. list ranks by a specific name\n");
+        printw("3. delete a specific rank\n");
+        command = wgetch(stdscr);
+    } while (!('1' <= command && command <= '3'));
+
+	echo();
+
+	switch (command)
+	{
+	case '1':
+		printw("X: ");
+        scanw("%d", &x);
+        printw("Y: ");
+        scanw("%d", &y);
+
+		if (1 > x || x > rankSize) {
+			x = 1;
+		}
+		if (1 > y || y > rankSize) {
+			y = rankSize;
+		}
+
+		printw("      name       |   score   \n");
+        printw("------------------------------\n");
+
+		if (x > y) {
+            printw("\nsearch failure: no rank in the list\n");
+        } else {
+			for(int i=x; i<=y; i++){
+				printw("%-17s| %-10d\n", rankList[i].name, rankList[i].score);
+			}
+		}
+
+		break;
+	case '2':
+		printw("Input the name: ");
+		scanw("%s", name);
+
+		printw("      name       |   score   \n");
+        printw("------------------------------\n");
+
+		for(int i=1; i<=rankSize; i++){
+			if(strcmp(rankList[i].name, name) == 0) {
+				printw("%-17s| %-10d\n", rankList[i].name, rankList[i].score);
+				findName=1;
+			}
+		}
+
+		if(!findName) printw("\nsearch failure: no name in the list\n");
+		break;
+	case '3':
+		printw("Input the rank: ");
+		scanw("%d", &delete_rank);
+
+		if(1 <= delete_rank && delete_rank <= rankSize){
+			for(int i=delete_rank; i< rankSize; i++){
+				strcpy(rankList[i].name, rankList[i+1].name);
+				rankList[i].score = rankList[i+1].score;
+			}
+			rankList[0].score -= 1;
+			rankList = (RankNode*)realloc(rankList, sizeof(RankNode)*(rankList[0].score + 1));
+			printw("\nresult: the rank deleted\n");
+		}else{
+			printw("\nsearch failure: the rank not in the list\n");
+		}
+		break;
+	default:
+		break;
+	}
+	noecho();
+    getch();
 }
 
 void writeRankFile(){
-	// user code
+	FILE *fp;
+	int rankSize = rankList[0].score;
+
+	fp = fopen("rank.txt", "wt");
+    if (fp == NULL) {
+        fprintf(stderr, "error: cannot open rank file");
+        exit(0);
+    } else {
+        fprintf(fp, "%d\n", rankList[0].score);
+        for (int i = 1; i <= rankSize; i++) {
+            fprintf(fp, "%s %d\n", rankList[i].name, rankList[i].score);
+        }
+
+        free(rankList);
+        fclose(fp);
+    }
 }
 
 void newRank(int score){
-	// user code
-}
+	char name[NAMELEN];
+	int rankSize = rankList[0].score;
+	int i;
 
-void DrawRecommend(int y, int x, int blockID,int blockRotate){
-	// user code
+    clear();
+    echo();
+    printw("Input your name: ");
+    scanw("%s", name);
+    noecho();
+
+	if (name[0] == '\0') {
+        return;
+    }
+
+	for(i=1; i<=rankSize; i++){
+		if(score >= rankList[i].score) break;
+	}
+
+	rankList = (RankNode*)realloc(rankList, sizeof(RankNode)*(++rankSize + 1));
+
+	// renew rankSize
+	rankList[0].score = rankSize;
+
+	// renew rankList
+	for(int j=rankSize; j>=i+1; j--){
+		strcpy(rankList[j].name, rankList[j-1].name);
+		rankList[j].score =  rankList[j-1].score;
+	}
+	strcpy(rankList[i].name, name);
+	rankList[i].score = score;
+
 }
 
 int recommend(RecNode *root){
+	int MAX_LEVEL = 3;
 	int max=0; // 미리 보이는 블럭의 추천 배치까지 고려했을 때 얻을 수 있는 최대 점수
-
-	// user code
-
+	int childBlockId = nextBlock[root->level];
+	// int level = root->level + 1;
+	for (int rotate = 0; rotate < 4; rotate++) {
+		for (int x = -2; x < WIDTH; x++) {
+			if (CheckToMove(root->recField, childBlockId, rotate, 0, x)) {
+				int h = 0;
+				while (CheckToMove(root->recField, childBlockId, rotate, h+1, x)) {
+					h++;
+				}
+				root->child = (RecNode*)malloc(sizeof(RecNode));
+				
+				for (int i = 0; i < HEIGHT; i++) {
+					for (int j = 0; j < WIDTH; j++) {
+						root->child->recField[i][j] = root->recField[i][j];
+					}
+				}
+				root->child->level = root->level + 1;
+				root->child->accumulatedScore = root->accumulatedScore + AddBlockToField(root->child->recField, childBlockId, rotate, h, x);
+				root->child->accumulatedScore += DeleteLine(root->child->recField);
+				if (root->child->level < MAX_LEVEL) {
+					int temp = recommend(root->child);
+					if(max == temp){
+						if(root->child->level == 1 && recommendY < h){
+							recommendR = rotate;
+							recommendX = x;
+							recommendY = h;
+						}
+					} else if(max < temp){
+						max = temp;
+						if (root->child->level == 1) {
+							recommendR = rotate;
+							recommendX = x;
+							recommendY = h;
+						}
+					}
+				}else{
+					if (max < root->child->accumulatedScore)
+						max = root->child->accumulatedScore;
+				}
+				free(root->child);
+			}
+		}
+	}
 	return max;
 }
 
+int modifiedCheckToMove(int height[WIDTH], int currentBlock,int blockRotate, int y, int x){
+	for(int i = 0; i < 4; i++){
+		for(int j = 0; j < 4; j++){
+			if(block[currentBlock][blockRotate][i][j] == 1){
+				int fieldY = y + i;
+				int fieldX = x + j;
+				if(HEIGHT-fieldY <= height[fieldX] || fieldY < 0 || fieldY >= HEIGHT || fieldX < 0 || fieldX >= WIDTH){
+					return 0;
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+
+int modified_recommend(NewRecNode *root){
+	int MAX_LEVEL = 3;
+	int reward = -999999999;
+	int total_hole = 0;
+	int emptyFloor = 0;
+	int tmp_reward = -999999999;
+	int childBlockId = nextBlock[root->level];
+
+	for (int r=0; r<4; r++){
+		for(int x=-4; x<WIDTH+4; x++){
+			if(modifiedCheckToMove(root->height, childBlockId, r, 0, x)){
+				int y=0;
+				while(modifiedCheckToMove(root->height, childBlockId, r, y+1, x)){
+					y++;
+				}
+				root->child = (NewRecNode*)malloc(sizeof(NewRecNode));
+				root->child->level = root->level+1;
+				root->child->accumulatedScore = root->accumulatedScore;
+			
+				int hole;
+				
+				// copy height
+				for(int i=0; i<WIDTH; i++){
+					root->child->height[i] = root->height[i];
+				}
+				// copy origin hole info
+				for(int i=0; i<HEIGHT; i++){
+					root->child->hole[i][0] = root->hole[i][0];
+					root->child->hole[i][1] = root->hole[i][1];
+				}
+
+				int min_h, floor, new_hole, max_h, origin_y, emptySide, variance_h, touched;
+				int cnt = 0;
+
+				// add block
+				floor=0;
+				touched=0;
+				for(int i=3; i>=0; i--){
+					for(int j=0; j<4; j++){
+						if(block[childBlockId][r][i][j] == 1){
+							int new_y=y+i;
+							int w=x+j;
+							if(0 <= new_y && new_y < HEIGHT && 0 <= w && w < WIDTH){
+								if (new_y == HEIGHT-1) floor++;
+								int h = HEIGHT-new_y;
+
+								// renew height
+								root->child->height[w] = h;
+								
+								if(h-root->height[w] > 1){
+									// renew hole
+									origin_y = HEIGHT-root->height[w];
+									new_hole = h-root->height[w]-1;
+									if(new_hole > 0){
+										for(int k=new_y+1; k<origin_y; k++){
+											root->child->hole[k][0]++;
+											touched--;
+											int add_bit = 0b1;
+											add_bit <<= (WIDTH-w-1);
+											root->child->hole[k][1] += add_bit;
+										}
+									}
+								}else{
+									touched++;
+								}
+								int check_bit=1;
+								check_bit <<= (WIDTH-w-1+1);
+								if(root->child->height[w+1] >= h && (check_bit & root->child->hole[new_y][1])>>(WIDTH-w-1+1) != 1) touched++;
+								check_bit = 1;
+								check_bit <<= (WIDTH-w-1-1);
+								if(root->child->height[w-1] >= h && (check_bit & root->child->hole[new_y][1])>>(WIDTH-w-1-1) != 1) touched++;
+							}
+						}
+					}
+				}
+
+				// add score of floor
+				root->child->accumulatedScore += 10*floor;
+
+				// check line
+				min_h = root->child->height[0];
+				for(int i=1; i<WIDTH; i++){
+					if(min_h > root->child->height[i]){
+						min_h = root->child->height[i];
+					}
+				}
+				// check hole
+				cnt = min_h;
+				for(int k=HEIGHT-min_h; k<HEIGHT; k++){
+					if(root->child->hole[k][0] != WIDTH) cnt--;
+				}
+				
+				
+				// renew info of child
+				if(cnt > 0){
+					//add score
+					root->child->accumulatedScore += 100*cnt*cnt;
+
+					for(int i=0; i<WIDTH; i++){
+						// renew height info
+						root->child->height[i] -= (cnt-1);
+						// check there is hole at height of width
+						int check_y = HEIGHT-root->child->height[i];
+						int check_bit=1;
+						check_bit <<= (WIDTH-i-1);
+						for(int j=check_y; j<HEIGHT; j++){
+							if((check_bit | root->child->hole[j][1])>>(WIDTH-i-1) ==1){
+								root->child->hole[j][0]--;
+								root->child->hole[j][1] -= check_bit;
+								root->child->height[i]--;
+							}else{
+								break;
+							}
+						}
+					}
+				}	
+
+				// emptyFloor
+				emptyFloor=0;
+				for(int i=0; i<WIDTH; i++){
+					if(root->child->height[i] == 0) emptyFloor++;
+					else{
+						int check_bit=1;
+						check_bit <<= (WIDTH-i-1);
+						if((check_bit & root->child->hole[HEIGHT-1][1])>>(WIDTH-i-1) ==1){
+							emptyFloor++;
+						}
+					}
+				}
+
+				// total_hole
+				total_hole = 0;
+				for(int i=0; i<HEIGHT; i++){
+					total_hole += root->child->hole[i][0]*(i+1);
+					if(i<HEIGHT-1){
+						if(root->child->hole[i][1] & root->child->hole[i+1][1]){
+							total_hole*10;
+						}
+					}
+				}
+				
+				// max_h, min_h
+				min_h = root->child->height[0];
+				max_h = root->child->height[0];
+				int root_max_h = root->height[0];
+				for(int i=0; i<WIDTH; i++){
+					if(max_h < root->child->height[i]) max_h = root->child->height[i];
+					if(min_h > root->child->height[i]) min_h = root->child->height[i];
+					if(root_max_h < root->height[i]) root_max_h = root->height[i];
+				}
+
+				// emptySide
+				emptySide = 0;
+				for(int i=0; i<HEIGHT; i++){
+					int check_bit = 1;
+					if(root->child->hole[i][1] & check_bit == 1) emptySide++;
+					check_bit <<= (WIDTH-1);
+					if((root->child->hole[i][1] & check_bit)>>(WIDTH-1) == 1) emptySide++;
+				}
+
+				//variance_h
+				variance_h = 0;
+				int avg_h=0;
+				for(int i=0; i<WIDTH; i++){
+					avg_h += root->child->height[i];
+				}
+				avg_h /= WIDTH;
+				for(int i=0; i<WIDTH; i++){
+					variance_h += (root->child->height[i]-avg_h)*(root->child->height[i]-avg_h);
+				}
+
+				// child를 고려하지 않은 reward
+				root->child->reward = 150000;
+				root->child->reward = root->child->reward - 40*max_h - 15*total_hole - 100*(max_h-min_h) - 40*emptySide + 50*(root->child->accumulatedScore-score) + floor*10 - emptyFloor*20 - 150*variance_h + 100*touched + cnt*cnt*100;
+				if(tmp_reward <= root->child->reward){
+					tmp_reward = root->child->reward;
+				}
+				if (root->child->level < MAX_LEVEL) {
+					// child를 고려여부 결정
+					if(tmp_reward <= root->child->reward*MAX_LEVEL){
+						root->child->reward += modified_recommend(root->child);
+					}
+					// 최종 reward 비교
+					if(reward <= root->child->reward){
+						reward = root->child->reward;
+						if (root->child->level == 1) {
+							recommendR = r;
+							recommendX = x;
+							recommendY = y;
+						}
+					}	
+				}
+				else{
+					if(reward < root->child->reward)
+						reward=root->child->reward;
+				}
+				// free child
+				free(root->child);
+			}
+		}
+	}
+	return reward;
+}
+
+void recBlockDown(int sig){
+	if(CheckToMove(field, nextBlock[0], recommendR, blockY+1, recommendX)){
+		blockY++;
+		DrawChange(field, KEY_DOWN, nextBlock[0], recommendR, blockY, recommendX);
+	}
+	else{
+		score += AddBlockToField(field, nextBlock[0], recommendR, blockY, recommendX);
+		if(blockY == -1) gameOver = 1;
+		score += DeleteLine(field);
+		// renew nextBlock
+		for (int i = 0; i < 4; i++) nextBlock[i] = nextBlock[i + 1];
+		nextBlock[4] = rand()%7;
+
+		for(int i=0; i<HEIGHT; i++){
+			newRecRoot->hole[i][0] = 0;
+			newRecRoot->hole[i][1] = 0b0;
+		}
+
+		for(int i=0; i<WIDTH; i++){
+			newRecRoot->height[i] = 0;
+			int is_height = 0;
+			int j = 0;
+			// check height
+			for(j=0; j<HEIGHT; j++){
+				if(field[j][i]) {
+					newRecRoot->height[i] = HEIGHT-j;
+					is_height = 1;
+					break;
+				}
+			}
+			if(is_height){
+				// check hole
+				int add_bit = 1;
+				add_bit <<= (WIDTH-i-1);
+				j++;
+				for(j; j<HEIGHT; j++){
+					if(!field[j][i]){
+						newRecRoot->hole[j][0]++;
+						newRecRoot->hole[j][1] += add_bit;
+					}
+				}
+			}
+		}
+		newRecRoot->level = 0;
+		newRecRoot->accumulatedScore = score;
+		newRecRoot->reward = 0;
+		int min_h = newRecRoot->height[0];
+		int max_h = newRecRoot->height[0];
+		for(int i=1; i<WIDTH; i++){
+			if(min_h > newRecRoot->height[i]) min_h = newRecRoot->height[i];
+			if(max_h < newRecRoot->height[i]) max_h = newRecRoot->height[i];
+		}
+		recommendR = 0;
+		recommendY = -1;
+		recommendX = WIDTH/2-2;
+		modified_recommend(newRecRoot);
+
+		DrawNextBlock(nextBlock);
+		blockY = -1;
+		blockX = WIDTH/2-2;
+		blockRotate = 0;
+		PrintScore(score);
+		DrawField();
+	}
+	timed_out = 0;
+}
+
 void recommendedPlay(){
-	// user code
+	int command;
+	clear();
+	act.sa_handler = recBlockDown;
+	sigaction(SIGALRM,&act,&oact);
+
+	newRecRoot = (NewRecNode*)malloc(sizeof(NewRecNode));
+
+	InitTetris();
+	do{
+		if(timed_out==0){
+			ualarm( 100000,0 );
+			timed_out=1;
+		}
+
+		// don't get command except QUIT
+		if(GetCommand()==QUIT){
+			alarm(0);
+			DrawBox(HEIGHT/2-1,WIDTH/2-5,1,10);
+			move(HEIGHT/2,WIDTH/2-4);
+			printw("Good-bye!!");
+			refresh();
+			getch();
+			newRank(score);
+
+			return;
+		}
+	}while(!gameOver);
+
+	free(recRoot);
+
+	alarm(0);
+	getch();
+	DrawBox(HEIGHT/2-1,WIDTH/2-5,1,10);
+	move(HEIGHT/2,WIDTH/2-4);
+	printw("GameOver!!");
+	refresh();
+	getch();
+	newRank(score);
 }
 
 int GetShadowY(int y, int x, int blockID, int blockRotate){

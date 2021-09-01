@@ -21,6 +21,8 @@
 
 // menu number
 #define MENU_PLAY '1'
+#define MENU_RANK '2'
+#define MENU_REC_PLAY '3'
 #define MENU_EXIT '4'
 
 // 사용자 이름의 길이
@@ -28,11 +30,36 @@
 
 #define CHILDREN_MAX 36
 
-typedef struct _RecNode{
-	int lv,score;
-	char (*f)[WIDTH];
-	struct _RecNode *c[CHILDREN_MAX];
+// typedef struct _RecNode{
+// 	int lv,score;
+// 	char (*f)[WIDTH];
+// 	struct _RecNode *c[CHILDREN_MAX];
+// } RecNode;
+
+// rank node
+typedef struct _RankNode{
+	char name[NAMELEN];
+	int score;
+} RankNode;
+
+// recommend node
+typedef struct _RecNode {
+	// must-have elements
+	int level; // depth of tree
+	int accumulatedScore;
+	char recField[HEIGHT][WIDTH];
+	struct _RecNode *child;
 } RecNode;
+
+// new recommend node
+typedef struct _NewRecNode {
+	int level; // depth of tree
+	int accumulatedScore;
+	int height[WIDTH];
+	int hole[HEIGHT][2];
+	struct _NewRecNode *child;
+	int reward;
+} NewRecNode;
 
 /* [blockShapeID][# of rotate][][]*/
 const char block[NUM_OF_SHAPE][NUM_OF_ROTATE][BLOCK_HEIGHT][BLOCK_WIDTH] ={
@@ -137,13 +164,16 @@ const char block[NUM_OF_SHAPE][NUM_OF_ROTATE][BLOCK_HEIGHT][BLOCK_WIDTH] ={
 };
 
 char field[HEIGHT][WIDTH];	/* 테트리스의 메인 게임 화면 */
-int nextBlock[BLOCK_NUM];	/* 현재 블럭의 ID와 다음 블럭의 ID들을 저장; [0]: 현재 블럭; [1]: 다음 블럭 */
+int nextBlock[5];	/* 현재 블럭의 ID와 다음 블럭의 ID들을 저장; [0]: 현재 블럭; [1]: 다음 블럭 */
 int blockRotate,blockY,blockX;	/* 현재 블럭의 회전, 블럭의 Y 좌표, 블럭의 X 좌표*/
 int score;			/* 점수가 저장*/
 int gameOver=0;			/* 게임이 종료되면 1로 setting된다.*/
 int timed_out;
 int recommendR,recommendY,recommendX; // 추천 블럭 배치 정보. 차례대로 회전, Y 좌표, X 좌표
 RecNode *recRoot;
+NewRecNode *newRecRoot;
+RankNode *rankList;
+int rec_flag = 0;
 
 /***********************************************************
  *	테트리스의 모든  global 변수를 초기화 해준다.
@@ -234,7 +264,7 @@ void DrawField();
  *		  (int) 블럭의 X좌표
  *	return	: none
  ***********************************************************/
-void AddBlockToField(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int blockY, int blockX);
+int AddBlockToField(char f[HEIGHT][WIDTH],int currentBlock,int blockRotate, int blockY, int blockX);
 
 /***********************************************************
  *	완전히 채워진 Line을 삭제하고 점수를 매겨준다.
@@ -366,6 +396,39 @@ void newRank(int score);
  *	return	: (int) 추천 블럭 배치를 따를 때 얻어지는 예상 스코어
  ***********************************************************/
 int recommend(RecNode *root);
+
+/***********************************************************
+ *	입력된 움직임이 가능한지를 판단해주는 함수.(for modified_recommend())
+ *	input	: (int[]) 블럭의 움직임을 확인할 필드
+ *		  (int) 현재 블럭의 모양 ID
+ *		  (int) 블럭의 회전 횟수
+ *		  (int) 블럭의 Y좌표
+ *		  (int) 블럭의 X좌표
+ *	return	: (int) 입력에 대한 블럭 움직임이 가능하면 1
+ *		  가능하지 않으면 0을 return 한다.
+ ***********************************************************/
+int modifiedCheckToMove(int height[WIDTH], int currentBlock,int blockRotate, int y, int x);
+
+/***********************************************************
+ *	추천 블럭 배치를 구한다.
+ *	input	: (RecNode*) 추천 트리의 루트
+ *	return	: (int) 추천 블럭 배치를 따를 때 얻어지는 예상 스코어
+ ***********************************************************/
+int modified_recommend(NewRecNode *root);
+
+/***********************************************************
+ *	추천 기능에 따른 위치에서 블럭이 일정 시간(1초)마다 내려가도록 호출되는 함수
+ *	더이상 내릴수 없을 경우,
+ *		블럭을 field에 합친다.
+ *		완전이 채워진 line을 지운다.
+ *		next block을 current block으로 바꿔주고
+ *		block의 좌표를 초기화 한다.
+ *		다음 블럭을 화면에 그리고 갱신된 score를 
+ *		화면에 display한다.
+ *	input	: (int) sig
+ *	return	: none
+ ***********************************************************/
+void recBlockDown(int sig);
 
 /***********************************************************
  *	추천 기능에 따라 블럭을 배치하여 진행하는 게임을 시작한다.

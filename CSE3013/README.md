@@ -20,14 +20,14 @@
 ### [ git / github ]
 <span style="color:red">*따로 실습 코드 없음*</span>
 
-## WEEK6
-### [ 테트리스 1주차 ]
-<실습>  
-* CheckToMove, DrawChange, BlockDown, AddBlockToField, DeleteLine  
-  
-<과제>  
-* 스페이스 기능 추가
-* DrawShadow, DrawBlockWithFeature, InitTetris, DrawNextBlock, BlockDown, AddBlockToField  
+## WEEK6 - 8
+### [ 테트리스 ]
 
-## WEEK7
-### [ 테트리스 2주차 ]
+## WEEK9 - 11
+### [ WaterFall ]
+
+## WEEK 12, 13
+### [ MAZE ]
+
+## FIANL PROJECT
+[ final project github ](https://github.com/mye785C83/comsil1-final-project)
