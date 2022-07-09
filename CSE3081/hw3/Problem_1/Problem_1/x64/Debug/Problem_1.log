@@ -1,0 +1,5 @@
+﻿  Problem_1.cpp
+D:\Projects\VisualStudio\HW3\Problem_1\Problem_1\Problem_1.cpp(15,22): warning C4101: 'j' :참조되지 않은 지역 변수입니다.
+D:\Projects\VisualStudio\HW3\Problem_1\Problem_1\Problem_1.cpp(15,19): warning C4101: 'i' :참조되지 않은 지역 변수입니다.
+D:\Projects\VisualStudio\HW3\Problem_1\Problem_1\Problem_1.cpp(121,9): warning C4552: '-': 식의 결과가 사용되지 않습니다.
+  Problem_1.vcxproj -> D:\Projects\VisualStudio\HW3\Problem_1\x64\Debug\Problem_1.exe

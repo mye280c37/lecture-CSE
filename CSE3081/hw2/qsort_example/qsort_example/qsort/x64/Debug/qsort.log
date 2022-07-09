@@ -1,0 +1,16 @@
+﻿  qsort_main.cpp
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(60,3): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(62,3): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(132,9): warning C4477: 'printf' : 서식 문자열 '%d'에 'int' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'size_t'입니다.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(132,9): message : 서식 문자열에서 '%zd'을(를) 사용하는 것이 좋습니다.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(153,9): warning C4477: 'printf' : 서식 문자열 '%d'에 'int' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'size_t'입니다.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(153,9): message : 서식 문자열에서 '%zd'을(를) 사용하는 것이 좋습니다.
+G:\내 드라이브\2021-02\알고리즘설계와분석(CSE3081-02, 임인성)\과제\HW2\qsort_example\qsort_example\qsort\qsort_main.cpp(163,1): fatal error C1001: 내부 컴파일러 오류가 발생했습니다.
+  (컴파일러 파일 'msc1.cpp', 줄 1603)
+   이 문제를 해결하려면 위 목록에 나오는 위치 부근의 프로그램을 단순화하거나 변경하세요.
+  가능한 경우 https://developercommunity.visualstudio.com에서 재현해 주세요.
+  자세한 내용을 보려면 Visual C++ [도움말] 메뉴에서 [기술 지원] 명령을
+   선택하거나 기술 지원 도움말 파일을 참조하세요.
+  'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\HostX86\x64\CL.exe'에서 내부 컴파일러 오류
+      자세한 내용을 보려면 Visual C++ [도움말] 메뉴에서
+   [기술 지원] 명령을 선택하거나 기술 지원 도움말 파일을 참조하십시오.

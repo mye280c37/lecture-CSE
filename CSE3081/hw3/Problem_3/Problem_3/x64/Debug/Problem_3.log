@@ -1,0 +1,5 @@
+﻿  Problem_3.cpp
+D:\Projects\VisualStudio\HW3\Problem_3\Problem_3\Problem_3.cpp(149,17): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+D:\Projects\VisualStudio\HW3\Problem_3\Problem_3\Problem_3.cpp(165,16): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+D:\Projects\VisualStudio\HW3\Problem_3\Problem_3\Problem_3.cpp(174,16): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+  Problem_3.vcxproj -> D:\Projects\VisualStudio\HW3\Problem_3\x64\Debug\Problem_3.exe
